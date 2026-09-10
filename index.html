@@ -1,0 +1,1047 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" href="data:,">
+<title>星云 · 数字孪生智慧沙盘</title>
+<style>
+/* ============ 全局与主题变量 ============ */
+:root{
+  --bg:#070b16;
+  --panel:rgba(14,22,40,.78);
+  --panel2:rgba(18,30,54,.9);
+  --line:rgba(80,165,255,.28);
+  --line2:rgba(80,165,255,.14);
+  --cyan:#3fe0ff;
+  --green:#2ee6a8;
+  --amber:#ffb340;
+  --red:#ff5a6e;
+  --violet:#a98bff;
+  --txt:#dce8ff;
+  --txt-dim:#8aa0c4;
+  --shadow:0 8px 30px rgba(0,0,0,.45);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);
+  font-family:"Microsoft YaHei","PingFang SC","Segoe UI",sans-serif;color:var(--txt)}
+#bg3d{position:fixed;inset:0;z-index:0}
+#bg3d canvas{display:block}
+
+/* 发光文字工具类 */
+.glow{text-shadow:0 0 12px rgba(63,224,255,.55)}
+
+/* ============ 顶部导航 ============ */
+header{position:fixed;top:0;left:0;right:0;height:56px;z-index:30;
+  display:flex;align-items:center;gap:18px;padding:0 18px;
+  background:linear-gradient(180deg,rgba(10,16,30,.92),rgba(8,12,24,.6));
+  border-bottom:1px solid var(--line);backdrop-filter:blur(8px)}
+.brand{display:flex;align-items:center;gap:10px;white-space:nowrap}
+.brand .logo{width:26px;height:26px;border-radius:8px;position:relative;
+  background:conic-gradient(from 180deg,#3fe0ff,#8a5bff,#2ee6a8,#3fe0ff);
+  box-shadow:0 0 16px rgba(63,224,255,.5)}
+.brand .logo::after{content:"";position:absolute;inset:4px;border-radius:5px;background:#0a1220}
+.brand b{font-size:15px;letter-spacing:1px}
+.brand small{display:block;font-size:10px;color:var(--dim);font-weight:400;letter-spacing:2px}
+#tabNav{display:flex;gap:6px;margin-left:6px}
+#tabNav button{padding:7px 16px;border:1px solid transparent;border-radius:8px;cursor:pointer;
+  background:transparent;color:var(--dim);font-size:13px;transition:.18s;white-space:nowrap}
+#tabNav button:hover{color:var(--txt);background:rgba(63,224,255,.08)}
+#tabNav button.active{color:var(--cyan);border-color:var(--line);
+  background:linear-gradient(180deg,rgba(63,224,255,.16),rgba(63,224,255,.05));
+  box-shadow:inset 0 0 12px rgba(63,224,255,.15)}
+.topRight{margin-left:auto;display:flex;align-items:center;gap:10px}
+.pill{display:flex;align-items:center;gap:6px;padding:6px 12px;border-radius:20px;
+  border:1px solid var(--line);background:var(--panel);font-size:12px;color:var(--txt)}
+.pill .dot{width:8px;height:8px;border-radius:50%;background:var(--green);box-shadow:0 0 8px var(--green)}
+.pill.online{color:var(--green);border-color:rgba(46,230,168,.4)}
+.iconBtn{width:34px;height:34px;border-radius:10px;border:1px solid var(--line);
+  background:var(--panel);color:var(--txt);cursor:pointer;font-size:15px;transition:.18s}
+.iconBtn:hover{border-color:var(--cyan);color:var(--cyan);box-shadow:0 0 12px rgba(63,224,255,.25)}
+#clockTxt{font-family:Consolas,monospace;font-size:13px;letter-spacing:1px;color:var(--amber)}
+
+/* ============ 右侧看板 ============ */
+#sidePanel{position:fixed;top:68px;right:14px;width:316px;z-index:25;
+  display:flex;flex-direction:column;gap:12px;max-height:calc(100vh - 120px)}
+.panelCard{border:1px solid var(--line);border-radius:12px;background:var(--panel);
+  backdrop-filter:blur(8px);box-shadow:var(--shadow);overflow:hidden}
+.panelCard .hd{display:flex;align-items:center;gap:8px;padding:9px 14px;font-size:12px;
+  color:var(--cyan);letter-spacing:1px;border-bottom:1px solid var(--line2);font-weight:600}
+.panelCard .hd::before{content:"";width:4px;height:12px;border-radius:2px;background:var(--cyan);
+  box-shadow:0 0 8px var(--cyan)}
+.kpiGrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:12px}
+.kpi{padding:11px 12px;border-radius:10px;border:1px solid var(--line2);
+  background:linear-gradient(180deg,rgba(20,34,60,.6),rgba(12,20,38,.4));position:relative;overflow:hidden}
+.kpi .t{font-size:11px;color:var(--dim)}
+.kpi .v{font-size:21px;font-weight:700;margin-top:3px;font-family:Consolas,monospace}
+.kpi .u{font-size:10px;color:var(--dim);margin-left:2px}
+.kpi .bar{height:3px;margin-top:7px;border-radius:2px;background:rgba(255,255,255,.08)}
+.kpi .bar i{display:block;height:100%;border-radius:2px;transition:width .5s}
+.kpi.c0 .v{color:var(--cyan)}.kpi.c0 .bar i{background:var(--cyan)}
+.kpi.c1 .v{color:var(--green)}.kpi.c1 .bar i{background:var(--green)}
+.kpi.c2 .v{color:var(--amber)}.kpi.c2 .bar i{background:var(--amber)}
+.kpi.c3 .v{color:var(--red)}.kpi.c3 .bar i{background:var(--red)}
+.kpi.c4 .v{color:var(--violet)}.kpi.c4 .bar i{background:var(--violet)}
+#chartPanel{flex:0 0 auto}
+#chartPanel canvas{display:block;width:100%;height:150px}
+.chartLegend{display:flex;gap:12px;padding:0 14px 9px;font-size:10px;color:var(--dim);flex-wrap:wrap}
+.chartLegend i{display:inline-block;width:10px;height:3px;border-radius:2px;margin-right:4px;vertical-align:middle}
+
+/* 详情面板 */
+#detailPanel{display:none}
+#detailPanel.show{display:block}
+#detailBody{padding:12px 14px;font-size:12px;line-height:1.9}
+#detailBody .dt{color:var(--dim)}
+#detailBody .dv{color:var(--txt);font-weight:600}
+#detailBody .row{display:flex;justify-content:space-between;border-bottom:1px dashed var(--line2);padding:2px 0}
+#detailBody .title{color:var(--cyan);font-size:13px;font-weight:700;margin-bottom:6px}
+#detailClose{position:absolute;top:8px;right:10px;background:none;border:none;color:var(--dim);cursor:pointer;font-size:14px}
+#detailClose:hover{color:var(--red)}
+
+/* ============ 左下参数 ============ */
+#ctrl{position:fixed;left:16px;bottom:64px;width:250px;z-index:25;padding:12px 14px}
+#ctrl .hd{font-size:12px;color:var(--cyan);margin-bottom:10px;letter-spacing:1px;font-weight:600}
+.sliderRow{margin-bottom:11px}
+.sliderRow label{display:flex;justify-content:space-between;font-size:11px;color:var(--dim);margin-bottom:4px}
+.sliderRow label b{color:var(--txt);font-family:Consolas,monospace}
+.sliderRow input{width:100%;-webkit-appearance:none;height:4px;border-radius:2px;background:rgba(255,255,255,.12);outline:none}
+.sliderRow input::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;border-radius:50%;
+  background:var(--cyan);box-shadow:0 0 8px var(--cyan);cursor:pointer;border:none}
+.toggleRow{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--dim);cursor:pointer;margin-top:6px}
+.toggleRow .sw{width:34px;height:18px;border-radius:10px;background:rgba(255,255,255,.15);position:relative;transition:.2s}
+.toggleRow .sw::after{content:"";position:absolute;top:2px;left:2px;width:14px;height:14px;border-radius:50%;background:#fff;transition:.2s}
+.toggleRow.on .sw{background:var(--green);box-shadow:0 0 10px var(--green)}
+.toggleRow.on .sw::after{left:18px}
+
+/* ============ 底部状态栏 ============ */
+#statusbar{position:fixed;left:0;right:0;bottom:0;height:44px;z-index:30;
+  display:flex;align-items:center;gap:20px;padding:0 18px;font-size:11px;color:var(--dim);
+  background:linear-gradient(0deg,rgba(8,12,22,.85),rgba(10,16,30,.5));
+  border-top:1px solid var(--line);backdrop-filter:blur(6px)}
+#statusbar .stat{display:flex;align-items:center;gap:6px}
+#statusbar .stat i{width:8px;height:8px;border-radius:50%}
+#statusbar .stat.g i{background:var(--green);box-shadow:0 0 8px var(--green)}
+#statusbar .stat.r i{background:var(--red);box-shadow:0 0 8px var(--red)}
+#statusbar .right{margin-left:auto;font-family:Consolas,monospace;letter-spacing:.5px}
+#weather{color:var(--amber)}
+
+/* ============ 图例 ============ */
+#legend{position:fixed;top:68px;left:16px;z-index:20;padding:10px 12px;border:1px solid var(--line2);
+  border-radius:10px;background:var(--panel);backdrop-filter:blur(6px);font-size:11px;color:var(--dim)}
+#legend b{color:var(--txt);display:block;margin-bottom:6px;font-size:12px;letter-spacing:1px}
+#legend div{display:flex;align-items:center;gap:7px;margin:4px 0}
+#legend .sw{width:11px;height:11px;border-radius:3px}
+#legend .sw.dot{border-radius:50%}
+
+/* ============ 提示浮层 ============ */
+#toast{position:fixed;top:70px;left:50%;transform:translateX(-50%) translateY(-20px);z-index:60;
+  padding:9px 18px;border-radius:10px;background:rgba(12,22,40,.92);border:1px solid var(--line);
+  font-size:13px;opacity:0;transition:.3s;pointer-events:none;box-shadow:var(--shadow);color:var(--txt)}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+/* 引导遮罩（可选，点击后消失） */
+#hint{position:fixed;bottom:60px;left:50%;transform:translateX(-50%);z-index:15;
+  font-size:12px;color:var(--dim);background:rgba(10,18,34,.7);padding:6px 14px;border-radius:20px;
+  border:1px solid var(--line2);backdrop-filter:blur(4px);transition:.4s}
+#hint.hide{opacity:0}
+
+@media (max-width:980px){
+  #sidePanel{width:280px}
+  #tabNav button{font-size:12px;padding:6px 10px}
+  .brand small{display:none}
+}
+</style>
+</head>
+<body>
+<div id="bg3d"></div>
+
+<!-- 顶部 -->
+<header>
+  <div class="brand">
+    <div class="logo"></div>
+    <div><b class="glow">星云数字孪生</b><small>INTEGRATED DIGITAL TWIN SANDBOX</small></div>
+  </div>
+  <nav id="tabNav">
+    <button data-tab="overview" class="active">总览</button>
+    <button data-tab="city">智慧城市</button>
+    <button data-tab="traffic">智慧交通</button>
+    <button data-tab="energy">智慧能源</button>
+    <button data-tab="park">智慧园区</button>
+  </nav>
+  <div class="topRight">
+    <div class="pill"><span class="dot"></span>孪生引擎运行中</div>
+    <div class="pill" id="clockTxt">00:00</div>
+    <button class="iconBtn" id="btnDayNight" title="切换昼夜">☾</button>
+    <button class="iconBtn" id="btnReset" title="复位视角">◎</button>
+  </div>
+</header>
+
+<!-- 图例 -->
+<div id="legend">
+  <b>图例 LEGEND</b>
+  <div><span class="sw" style="background:var(--cyan)"></span>城市建筑</div>
+  <div><span class="sw dot" style="background:var(--amber)"></span>行驶车辆</div>
+  <div><span class="sw" style="background:var(--green)"></span>能源电站/电网</div>
+  <div><span class="sw" style="background:var(--violet)"></span>园区厂房/物流</div>
+</div>
+
+<!-- 右侧看板 -->
+<aside id="sidePanel">
+  <div class="panel">
+    <div class="hd">实时指标 KPI</div>
+    <div class="kpiGrid">
+      <div class="kpi c0"><div class="t">在线车辆</div><div class="v"><span id="v_vehicle">0</span><span class="u">辆</span></div><div class="bar"><i id="b_vehicle"></i></div></div>
+      <div class="kpi c1"><div class="t">城市总负荷</div><div class="v"><span id="v_load">0</span><span class="u">MW</span></div><div class="bar"><i id="b_load"></i></div></div>
+      <div class="kpi c2"><div class="t">清洁发电</div><div class="v"><span id="v_gen">0</span><span class="u">MW</span></div><div class="bar"><i id="b_gen"></i></div></div>
+      <div class="kpi c3"><div class="t">碳排放</div><div class="v"><span id="v_carbon">0</span><span class="u">t/h</span></div><div class="bar"><i id="b_carbon"></i></div></div>
+      <div class="kpi c4"><div class="t">园区设备运行</div><div class="v"><span id="v_device">0</span><span class="u">%</span></div><div class="bar"><i id="b_device"></i></div></div>
+      <div class="kpi c1"><div class="t">能量流动线</div><div class="v"><span id="v_energy">0</span><span class="u">条</span></div><div class="bar"><i id="b_energy"></i></div></div>
+    </div>
+  </div>
+
+  <div class="panel" id="chartPanel">
+    <div class="hd">动态曲线 · 近60秒</div>
+    <canvas id="chart" width="0" height="0"></canvas>
+    <div class="chartLegend">
+      <span><i style="background:var(--cyan)"></i>负荷</span>
+      <span><i style="background:var(--green)"></i>发电</span>
+      <span><i style="background:var(--amber)"></i>车流</span>
+      <span><i style="background:var(--red)"></i>碳排</span>
+    </div>
+  </div>
+
+  <div class="panel" id="detailPanel">
+    <div class="hd">实体详情 DETAIL<span><button id="detailClose">✕</button></span></div>
+    <div id="detailBody"></div>
+  </div>
+</aside>
+
+<!-- 左下参数 -->
+<section id="ctrl" class="panel">
+  <div class="hd">仿真参数 CONFIG</div>
+  <div class="sliderRow">
+    <label>车流密度 <b id="sv">80%</b></label>
+    <input type="range" id="slVehicle" min="0" max="100" value="80">
+  </div>
+  <div class="sliderRow">
+    <label>能源需求 <b id="se">60%</b></label>
+    <input type="range" id="slEnergy" min="0" max="100" value="60">
+  </div>
+  <div class="sliderRow">
+    <label>仿真速度 <b id="ss">1.0x</b></label>
+    <input type="range" id="slSpeed" min="5" max="200" value="100">
+  </div>
+  <div class="toggleRow on" id="tgParticle"><span class="sw"></span>能量流动粒子</div>
+  <div class="toggleRow on" id="tgHeat"><span class="sw"></span>能耗热力图</div>
+</aside>
+
+<!-- 底部状态栏 -->
+<footer id="statusbar">
+  <div class="stat g"><i></i>链路正常</div>
+  <div class="stat"><span id="zoneTag">当前区域：城市总览</span></div>
+  <div class="stat">坐标 <span id="coord">0, 0</span></div>
+  <div class="right" id="fps">0 FPS</div>
+</footer>
+
+<!-- 提示 -->
+<div id="hint">拖拽旋转 · 滚轮缩放 · 左键点击查看实体 · 顶部切换区域</div>
+<div id="toast"></div>
+
+<script src="lib/three.min.js"></script>
+<script src="lib/OrbitControls.js"></script>
+<script>
+/* ================================================================
+ * 数字孪生沙盘 · 基础模块
+ * 职责：渲染器 / 场景 / 相机 / 灯光 / 地面 / 控制器 / 通用工具
+ * ================================================================ */
+(function(){
+/* ---------------- 全局状态 ---------------- */
+const S = {                 // 全局仿真状态
+  simHour: 9.5,             // 仿真时刻（0-24）
+  simSpeed: 1.0,            // 仿真倍速
+  dayMode: 1,               // 1=白天 0=夜晚 0.5=自动(由时刻推断)
+  vehicleDensity: 0.8,      // 车流密度滑块 0-1
+  energyDemand: 0.6,        // 能源需求滑块 0-1
+  particle: true,           // 能量粒子开关
+  heat: true,               // 热力图开关
+  trafficIndex: 0,          // 交通拥堵指数 0-100
+  cityLoad: 0, parkLoad: 0, // 城市/园区负荷 MW
+  genTotal: 0,              // 清洁发电 MW
+  carbonRate: 0,            // 碳排放 t/h
+  deviceRate: 100,          // 园区设备运行率 %
+  energyLines: 0,           // 能量流动线条数
+};
+window.TWIN = { S: S, F: [] };        // F = 可点击实体列表
+
+/* ---------------- 渲染器 / 场景 / 相机 ---------------- */
+const container = document.getElementById('bg3d');
+const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.outputEncoding = THREE.sRGBEncoding;
+container.appendChild(renderer.domElement);
+
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 2000);
+camera.position.set(0, 150, 240);
+camera.lookAt(0, 0, 0);
+scene.fog = new THREE.Fog(0x0a1122, 280, 1000);
+
+const controls = new THREE.OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true;
+controls.dampingFactor = 0.08;
+controls.maxPolarAngle = Math.PI * 0.49;
+controls.minDistance = 30;
+controls.maxDistance = 560;
+controls.target.set(0, 0, 0);
+
+/* ---------------- 灯光 ---------------- */
+const hemi = new THREE.HemisphereLight(0xbfd8ff, 0x223, 0.55);
+scene.add(hemi);
+const sun = new THREE.DirectionalLight(0xfff2df, 1.25);
+sun.position.set(120, 180, 80);
+sun.castShadow = true;
+sun.shadow.mapSize.width = 1024;
+sun.shadow.mapSize.height = 1024;
+const sc = sun.shadow.camera;
+sc.left = -180; sc.right = 180; sc.top = 180; sc.bottom = -180;
+sc.near = 10; sc.far = 520;
+scene.add(sun);
+const fill = new THREE.DirectionalLight(0x9fd4ff, 0.35);
+fill.position.set(-120, 90, -80);
+scene.add(fill);
+
+/* ---------------- 地面 ---------------- */
+const groundMat = new THREE.MeshStandardMaterial({ color: 0x0f1626, roughness: 0.92, metalness: 0.1 });
+const ground = new THREE.Mesh(new THREE.CircleGeometry(420, 72), groundMat);
+ground.rotation.x = -Math.PI / 2;
+ground.position.y = -0.5;
+ground.receiveShadow = true;
+scene.add(ground);
+const grid = new THREE.GridHelper(380, 24, 0x1e3a5f, 0x142a46);
+grid.position.y = -0.4;
+scene.add(grid);
+
+/* 天空球（渐变背景 + 昼夜调整） */
+const skyMat = new THREE.ShaderMaterial({
+  side: THREE.BackSide, depthWrite: false, fog: false,
+  uniforms: {
+    top: { value: new THREE.Color(0x1c3d66) },
+    bottom: { value: new THREE.Color(0x0b1222) },
+  },
+  vertexShader: 'varying vec3 vP; void main(){ vP=position; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}',
+  fragmentShader: 'varying vec3 vP; uniform vec3 top; uniform vec3 bottom; void main(){ float h=normalize(vP).y; gl_FragColor=vec4(mix(bottom,top,clamp(h*1.4+0.15,0.0,1.0)),1.0);}'
+});
+const sky = new THREE.Mesh(new THREE.SphereGeometry(960, 32, 16), skyMat);
+sky.rotation.y = Math.PI;
+scene.add(sky);
+
+/* ---------------- 通用工具 ---------------- */
+function box(w, h, d, color, opts){
+  opts = opts || {};
+  const mat = new THREE.MeshStandardMaterial({
+    color: color, roughness: opts.roughness != null ? opts.roughness : 0.75,
+    metalness: opts.metalness != null ? opts.metalness : 0.15,
+    emissive: opts.emissive || 0x000000,
+    emissiveIntensity: opts.emissiveIntensity || 0,
+  });
+  const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat);
+  if(opts.y != null) m.position.y = opts.y;
+  if(opts.shadow) { m.castShadow = true; m.receiveShadow = true; }
+  return m;
+}
+function grp(){ return new THREE.Group(); }
+function addClick(mesh, data){ mesh.userData = data; window.TWIN.F.push(mesh); }
+function rnd(a, b){ return a + Math.random() * (b - a); }
+
+/* 保存供其它模块使用 */
+window.__app = {
+  scene: scene, camera: camera, controls: controls, renderer: renderer,
+  sun: sun, hemi: hemi, fill: fill, skyMat: skyMat,
+  box: box, grp: grp, addClick: addClick, rnd: rnd,
+};
+})();
+
+/* ================================================================
+ * 数字孪生沙盘 · 场景构建模块
+ * 职责：静态几何——道路网络 / 城市建筑 / 能源电站 / 园区厂房
+ * 同时注册供动态模块使用的路径与对象引用
+ * ================================================================ */
+(function(){
+const A = window.__app, scene = A.scene;
+const box = A.box, grp = A.grp, addClick = A.addClick, rnd = A.rnd;
+
+/* 动态对象容器（动画模块读写） */
+window.TWIN.o = { traffic: [], turbine: [], tower: [], device: [], agv: [] };
+TWIN.buildings = [];
+
+/* ========== 工具：沿路径铺设扁平道路段 ========== */
+function roadPath(pts, w){
+  const g = grp();
+  for(let i = 0; i < pts.length - 1; i++){
+    const a = pts[i], b = pts[i+1];
+    const dx = b[0]-a[0], dz = b[1]-a[1];
+    const len = Math.hypot(dx, dz);
+    if(len < 0.01) continue;
+    const seg = box(w, 0.16, len, 0x1f2b3a, { shadow: true });
+    seg.position.set((a[0]+b[0])/2, 0.08, (a[1]+b[1])/2);
+    seg.rotation.y = -Math.atan2(dx, dz);
+    g.add(seg);
+  }
+  scene.add(g);
+  return g;
+}
+function ringRoad(cx, cz, r, n, w){
+  const g = grp();
+  for(let i = 0; i < n; i++){
+    const t0 = (i/n)*Math.PI*2, t1 = ((i+1)/n)*Math.PI*2;
+    const x0 = cx + Math.cos(t0)*r, z0 = cz + Math.sin(t0)*r;
+    const x1 = cx + Math.cos(t1)*r, z1 = cz + Math.sin(t1)*r;
+    const len = Math.hypot(x1-x0, z1-z0);
+    const seg = box(w, 0.16, len, 0x1f2b3a, { shadow: true });
+    seg.position.set((x0+x1)/2, 0.08, (z0+z1)/2);
+    seg.rotation.y = -Math.atan2(x1-x0, z1-z0);
+    g.add(seg);
+  }
+  scene.add(g);
+  return g;
+}
+function circlePath(cx, cz, r, n){
+  const p = [];
+  for(let i = 0; i < n; i++){
+    const t = i/n*Math.PI*2;
+    p.push([cx + Math.cos(t)*r, cz + Math.sin(t)*r]);
+  }
+  p.push(p[0]);
+  return p;
+}
+
+/* ========== 1) 道路网络 ========== */
+// 中心十字主干道
+roadPath([[0,-150],[0,150]], 9.6);
+roadPath([[-150,0],[150,0]], 9.6);
+// 环形主干道
+ringRoad(0,0,60,40, 8.4);
+ringRoad(0,0,120,72, 6);
+// 通往园区（东北）与能源（西北）的放射路
+roadPath([[28,28],[90,-55]], 6.6);
+roadPath([[-28,28],[-80,70]], 6.6);
+// 园区内部路
+roadPath([[70,-20],[118,-20]], 3.2);
+roadPath([[70,-20],[70,-80]], 3.2);
+roadPath([[118,-80],[70,-80]], 3.2);
+roadPath([[118,-20],[118,-80]], 3.2);
+
+/* ========== 2) 路径定义（供车辆/公交/AGV） ========== */
+window.P = {
+  ring1: circlePath(0,0,60, 132),
+  ring2: circlePath(0,0,120, 160),
+  toEnergy: [[30,-30],[-5,-5],[-80,70]],
+  toPark:   [[-30,30],[5,5],[120,-55]],
+  parkLoop: circlePath(94,-50,26, 64),
+};
+
+/* ========== 3) 城市建筑（中心环内） ========== */
+const bPal = [0x8fa3c2, 0x9fb0cc, 0x7d92b4, 0xa8b8d6, 0x6f84aa, 0x92a6c8, 0x86a0c8];
+for(let i = 0; i < 160; i++){
+  const ang = rnd(0, Math.PI*2), rr = rnd(7, 52);
+  const x = Math.cos(ang)*rr, z = Math.sin(ang)*rr;
+  if(Math.abs(x) < 8 && Math.abs(z) < 8) continue;   // 避开中央广场
+  const w = rnd(4,9), d = rnd(4,9), h = rnd(7,44);
+  const b = box(w, h, d, bPal[Math.floor(rnd(0,bPal.length))], { shadow:true, roughness:0.85, metalness:0.05 });
+  b.position.set(x, h/2, z);
+  scene.add(b);
+  b.material.emissive = new THREE.Color(0xffd9a0);
+  b.material.emissiveIntensity = 0;                    // 夜晚由动画模块点亮
+  TWIN.buildings.push({ mesh: b, mat: b.material, h: h, win: rnd(0.1, 0.6) });
+  addClick(b, { sys:'city', name:'智慧建筑', detail:'city', h: Math.round(h) });
+}
+/* 中央地标双子塔 */
+const lm1 = box(14, 66, 14, 0xdfe8ff, { shadow:true, roughness:0.3, metalness:0.4 });
+lm1.position.set(0, 33, 0); lm1.material.emissive = new THREE.Color(0x2a4a9a); lm1.material.emissiveIntensity = 0.5;
+scene.add(lm1);
+const lm2 = box(10, 52, 10, 0xcfd9f5, { shadow:true, roughness:0.3, metalness:0.4 });
+lm2.position.set(14, 26, 6); lm2.material.emissive = new THREE.Color(0x2a4a9a); lm2.material.emissiveIntensity = 0.5;
+scene.add(lm2);
+TWIN.buildings.push({ mesh: lm1, mat: lm1.material, h:66, win:0.8 }, { mesh: lm2, mat: lm2.material, h:52, win:0.8 });
+addClick(lm1, { sys:'city', name:'城市中央塔', detail:'city', h:66 });
+addClick(lm2, { sys:'city', name:'企业总部大厦', detail:'city', h:52 });
+
+/* ========== 4) 交通信号灯与公交站 ========== */
+function trafficLight(x, z, rotY){
+  const g = grp();
+  const pole = box(0.4, 4.2, 0.4, 0x39475c, { shadow:true }); pole.position.y = 2.1; g.add(pole);
+  const head = box(0.9, 1.1, 0.5, 0x151a24); head.position.y = 4.3; g.add(head);
+  const red = box(0.5,0.5,0.3, 0x333, { emissive:0xff2222, emissiveIntensity:0.2 }); red.position.set(0,4.7,0.24); g.add(red);
+  const green = box(0.5,0.5,0.3, 0x333, { emissive:0x22ee44, emissiveIntensity:0.1 }); green.position.set(0,4.0,0.24); g.add(green);
+  g.position.set(x,0,z); g.rotation.y = rotY;
+  scene.add(g);
+  TWIN.o.traffic.push({ red:red.material, green:green.material, phase: Math.floor(rnd(0,4)) });
+  addClick(g, { sys:'traffic', name:'智能信号灯', detail:'traffic' });
+}
+[[0,56,0],[0,-56,0],[56,0,Math.PI/2],[-56,0,Math.PI/2]].forEach(function(c){ trafficLight(c[0],c[1],c[2]); });
+
+function busStop(x,z,rotY){
+  const g = grp();
+  const s = box(5,0.14,1.6, 0x2a3b52, { shadow:true }); s.position.y=0.07; g.add(s);
+  const back = box(5,2.6,0.1, 0x3b4f6e); back.position.set(0,1.3,0); g.add(back);
+  const roof = box(5.4,0.12,2, 0x22d3ee); roof.position.y=2.9; roof.material.emissive = new THREE.Color(0x22d3ee); roof.material.emissiveIntensity=0.3; g.add(roof);
+  g.position.set(x,0,z); g.rotation.y = rotY;
+  scene.add(g);
+  addClick(g, { sys:'traffic', name:'智能公交站', detail:'traffic' });
+}
+busStop(0,68,0); busStop(0,-68,0); busStop(68,0,0); busStop(-68,0,0);
+
+/* ========== 5) 智慧能源（西北区，中心约 -80,70） ========== */
+/* 风力发电机 */
+for(let k=0;k<4;k++){
+  const gx = -96 + k*18, gz = 82 + (k%2)*12;
+  const g = grp();
+  const tower = box(1.2, 26, 1.2, 0xcfd8e6, { shadow:true }); tower.position.y=13; g.add(tower);
+  const nacelle = box(1.6,1.6,3.4, 0xdfe6f2); nacelle.position.set(0,26,0); g.add(nacelle);
+  const hub = grp();
+  for(var b2=0;b2<3;b2++){
+    const blade = box(0.35, 12, 0.9, 0xeaf1fb, { roughness:0.5, metalness:0.1 });
+    blade.position.y = 6; blade.rotation.y = (b2/3)*Math.PI*2;
+    hub.add(blade);
+  }
+  hub.position.set(0,26,0); g.add(hub);
+  g.position.set(gx,0,gz);
+  scene.add(g);
+  TWIN.o.turbine.push({ hub: hub });
+  addClick(g, { sys:'energy', name:'风力发电机组', detail:'energy', note:'额定 2.5MW' });
+}
+/* --- 光伏阵列 --- */
+for(var r=0;r<3;r++) for(var c=0;c<5;c++){
+  const gx = -112 + c*9, gz = 56 + r*7;
+  const panel = box(7, 0.3, 4.5, 0x1e3a8a, { metalness:0.6, roughness:0.3 });
+  panel.position.set(gx, 1.6, gz); panel.rotation.x = -0.35;
+  panel.material.emissive = new THREE.Color(0x1133aa); panel.material.emissiveIntensity = 0.15;
+  scene.add(panel);
+  TWIN.buildings.push({ mesh: panel, mat: panel.material, pv:true });
+}
+/* --- 储能站 --- */
+const store = grp();
+for(var s2=0;s2<3;s2++){
+  const b = box(4, 2.2, 2.4, 0x33507a, { shadow:true, metalness:0.4 });
+  b.position.set(-64 + s2*5, 1.1, 40);
+  b.material.emissive = new THREE.Color(0x22cc88); b.material.emissiveIntensity = 0.3;
+  store.add(b);
+}
+scene.add(store);
+addClick(store, { sys:'energy', name:'磷酸铁锂储能站', detail:'energy', note:'容量 100MW·h' });
+/* --- 输电塔（能源→城市） --- */
+for(var k=0;k<7;k++){
+  const t = k/6;
+  const tx = -80 + t*115, tz = 70 - t*42;
+  const tg = grp();
+  const body = box(0.6, 22, 0.6, 0x66758a, { metalness:0.4, roughness:0.5 }); body.position.y=11; tg.add(body);
+  const arm = box(7, 0.7, 0.7, 0x66758a, { metalness:0.4 }); arm.position.y=20; tg.add(arm);
+  const dot = box(0.9,0.4,0.9, 0x3fe0ff); dot.position.y=20.6; dot.material.emissive = new THREE.Color(0x3fe0ff); dot.material.emissiveIntensity=0.9; tg.add(dot);
+  tg.position.set(tx,0,tz); scene.add(tg);
+  TWIN.o.tower.push({ dot: dot.material });
+}
+/* 电网连线 */
+const powerPts = [];
+for(var k2=0;k2<8;k2++){ const t2=k2/7; powerPts.push(new THREE.Vector3(-80+t2*115, 20, 70-t2*42)); }
+const lineGeo = new THREE.BufferGeometry().setFromPoints(powerPts);
+const lineMat = new THREE.LineBasicMaterial({ color: 0x3fe0ff, transparent:true, opacity:0.5 });
+scene.add(new THREE.Line(lineGeo, lineMat));
+
+/* ========== 6) 智慧园区（东北，中心约 94,-50） ========== */
+const parkG = grp();
+for(var i=0;i<3;i++){
+  const x = 80 + i*14, z = -55;
+  const b = box(12, 7, 10, 0x2f4468, { shadow:true, roughness:0.8 });
+  b.position.set(x, 3.5, z); parkG.add(b);
+  const roof = box(13, 0.5, 11, 0x3b5a86, { roughness:0.6 }); roof.position.set(x,7.2,z); parkG.add(roof);
+  addClick(b, { sys:'park', name:'智能制造厂房', detail:'park' });
+}
+scene.add(parkG);
+/* 产线设备（色随运行状态变化） */
+for(var i2=0;i2<6;i2++){
+  const x = 82 + (i2%3)*13, z = -42 + Math.floor(i2/3)*8;
+  const d = box(1.6, 1.6, 1.6, 0x26e6a8, { metalness:0.3, roughness:0.4 });
+  d.position.set(x, 1.2, z);
+  d.material.emissive = new THREE.Color(0x26e6a8); d.material.emissiveIntensity = 0.7;
+  scene.add(d);
+  TWIN.o.device.push({ mesh:d, mat:d.material, base:0x26e6a8 });
+  addClick(d, { sys:'park', name:'产线设备', detail:'park' });
+}
+/* AGV 小车 */
+for(var i3=0;i3<4;i3++){
+  const a = box(2.2, 0.8, 2.2, 0xffb340, { metalness:0.4 });
+  a.material.emissive = new THREE.Color(0xffb340); a.material.emissiveIntensity = 0.35;
+  scene.add(a);
+  TWIN.o.agv.push({ mesh:a, t: rnd(0,1) });
+}
+
+/* 暴露给动画/联动模块的引用 */
+window.__dyn = {
+  buildings: TWIN.buildings,
+  traffic: TWIN.o.traffic,
+  turbines: TWIN.o.turbine,
+  towers: TWIN.o.tower,
+  devices: TWIN.o.device,
+  agvs: TWIN.o.agv,
+};
+})();
+
+/* ================================================================
+ * 数字孪生沙盘 · 动态实体与动画模块
+ * 职责：车辆/公交/AGV 运动、能量粒子流动、风机旋转、信号灯、昼夜光照
+ * ================================================================ */
+(function(){
+const A = window.__app, scene = A.scene;
+const box = A.box, grp = A.grp, rnd = A.rnd;
+const S = window.TWIN.S;
+const P = window.P;
+const dyn = window.__dyn;
+
+/* ---------- 车辆（含公交） ---------- */
+const cars = [];                 // {mesh, path, t, speed, dir}
+const carCols = [0xff6b7a, 0x7ac0ff, 0xffd166, 0x9dffb0, 0xff9a62, 0xc9a2ff];
+function lenOf(path){ let l=0; for(let i=0;i<path.length-1;i++) l+=Math.hypot(path[i+1][0]-path[i][0], path[i+1][1]-path[i][1]); return l; }
+const lens = { r1: lenOf(P.ring1), r2: lenOf(P.ring2), e: lenOf(P.toEnergy), p: lenOf(P.toPark), park: lenOf(P.parkLoop) };
+function ptAt(path, len, t){
+  let acc = 0, target = t*len;
+  for(let i=0;i<path.length-1;i++){
+    const seg = Math.hypot(path[i+1][0]-path[i][0], path[i+1][1]-path[i][1]);
+    if(acc + seg >= target){ const f=(target-acc)/seg; return { x: path[i][0]+(path[i+1][0]-path[i][0])*f, z: path[i][1]+(path[i+1][1]-path[i][1])*f }; }
+    acc += seg;
+  }
+  return { x: path[path.length-1][0], z: path[path.length-1][1] };
+}
+for(let i=0;i<46;i++){
+  const isBus = i<5;
+  const m = box(isBus?2.3:1.5, isBus?1.6:0.8, isBus?6:2.8, isBus?0x25d0f0:carCols[i%carCols.length],
+    { metalness:0.4, roughness:0.5 });
+  m.position.y = isBus?1.0:0.7;
+  m.material.emissive = new THREE.Color(isBus?0x25d0f0:0x334466);
+  m.material.emissiveIntensity = isBus?0.5:0.2;
+  scene.add(m);
+  const r = Math.random();
+  const pathDef = r<0.5 ? P.ring1 : r<0.8 ? P.ring2 : r<0.9 ? P.toEnergy : P.toPark;
+  const tl = r<0.5?lens.r1 : r<0.8?lens.r2 : r<0.9?lens.e : lens.p;
+  cars.push({ mesh:m, path:pathDef, len:tl, t:Math.random(), speed:(isBus?0.0011:rnd(0.0016,0.0032)), bus:isBus });
+}
+
+/* AGV */
+for(let i=0;i<dyn.agvs.length;i++){ dyn.agvs[i].len = lens.park; }
+
+/* ---------- 2. 能量流动粒子 ---------- */
+const linesArr = [];
+function mkLine(a,b,height){
+  const pts = [];
+  const n = 24;
+  for(let i=0;i<=n;i++){ const f=i/n; pts.push(new THREE.Vector3(a[0]+(b[0]-a[0])*f, height+Math.sin(f*Math.PI)*18, a[1]+(b[1]-a[1])*f)); }
+  const g = new THREE.BufferGeometry().setFromPoints(pts);
+  const m = new THREE.LineBasicMaterial({ color:0x2ee6a8, transparent:true, opacity:0.5 });
+  const line = new THREE.Line(g,m); scene.add(line); linesArr.push(line); return line;
+}
+mkLine([-80,70],[0,0],6);     // 能源→城市
+mkLine([-80,70],[120,-55],6); // 能源→园区
+/* 粒子 */
+const src = [-80,70];
+const targets = [[0,0],[120,-55]];
+const particles = [];
+for(let i=0;i<40;i++){
+  const tIdx = i%2;
+  const p = new THREE.Mesh(new THREE.SphereGeometry(0.55, 8, 8),
+    new THREE.MeshBasicMaterial({ color: tIdx?0x3fe0ff:0x2ee6a8, transparent:true, opacity:0.95 }));
+  p.userData = { s: Math.random() };
+  scene.add(p);
+  particles.push({ mesh:p, line:(tIdx===0?0:1), t:Math.random() });
+}
+TWIN.o.particles = particles;
+
+/* ---------- 3. 能耗热力柱 ---------- */
+const heatGroup = grp();
+const heatCells = [];
+const heatPts = [];
+for(let i=0;i<26;i++){
+  const px = rnd(-45,45), pz = rnd(-45,45);
+  const bar = box(1.1, 1, 1.1, 0xff6b00);
+  bar.position.set(px,0.6,pz);
+  bar.material.emissive = new THREE.Color(0xff6b00);
+  bar.material.emissiveIntensity = 0.5;
+  heatGroup.add(bar);
+  heatCells.push({ mesh:bar, mat:bar.material, x:px, z:pz });
+}
+window.__heatGroup = heatGroup; window.__heatCells = heatCells;
+heatGroup.visible = true;
+
+/* ---------- 3. 仿真时刻推进 ---------- */
+function dayFactorOf(h){
+  const auto = h>=6 && h<=20 ? 0.5+0.5*Math.sin(Math.PI*(h-6)/14) : 0.05;
+  if(S.dayMode === 1) return 1;
+  if(S.dayMode === 0) return 0.04;
+  return auto;
+}
+
+/* ---------- 4. 每帧更新 ---------- */
+function updateWorld(dt){
+  // 时刻推进（一天约 60 秒真实时间）
+  S.simHour = (S.simHour + dt*0.4*S.simSpeed) % 24;
+  const df = dayFactorOf(S.simHour);
+
+  /* 车辆移动 */
+  const activeN = Math.round(46 * S.vehicleDensity);
+  for(let i=0;i<cars.length;i++){
+    if(i >= activeN){ cars[i].mesh.visible = false; continue; }
+    cars[i].mesh.visible = true;
+    const c = cars[i];
+    c.t = (c.t + c.speed * S.simSpeed * dt * (df*0.6+0.4)) % 1;
+    const p0 = ptAt(c.path, c.len, c.t);
+    c.mesh.position.x = p0.x; c.mesh.position.z = p0.z;
+    c.mesh.rotation.y = Math.atan2(p0.x, p0.z);   // 车头大致朝切线（仅示意）
+  }
+  S.vehicleActive = activeN;
+
+  /* AGV 沿园区环 */
+  for(let i=0;i<dyn.agvs.length;i++){
+    const a = dyn.agvs[i];
+    a.t = (a.t + dt*0.002*S.simSpeed) % 1;
+    const p1 = ptAt(P.parkLoop, lens.park, a.t);
+    a.mesh.position.x = p1.x; a.mesh.position.z = p1.z;
+    a.mesh.rotation.y = Math.atan2(p1.x, p1.z);
+  }
+
+  /* 风机旋转 */
+  for(let i=0;i<dyn.turbines.length;i++) dyn.turbines[i].hub.rotation.z += dt*0.5*S.simSpeed*df;
+
+  /* 信号灯 */
+  dyn.traffic.forEach(function(l, idx){
+    const period = 8; const k = (S.simHour*3600 + Math.floor(performance.now()/1000*S.simSpeed)) % period;
+    const g = (k + idx*2) % period < 4;          // 相位错开
+    l.green.emissiveIntensity = g ? 1.2 : 0.05;
+    l.red.emissiveIntensity = g ? 0.05 : 1.1;
+  });
+
+  /* 能量粒子 */
+  for(let i=0;i<linesArr.length;i++) linesArr[i].visible = S.particle;
+  for(let i=0;i<particles.length;i++){
+    const p = particles[i];
+    p.mesh.visible = S.particle;
+    p.t = (p.t + dt*0.05*S.simSpeed) % 1;
+    const tgt = targets[p.line];
+    const base = { x: src[0]+(tgt[0]-src[0])*p.t, z: src[1]+(tgt[1]-src[1])*p.t };
+    p.mesh.position.set(base.x, 8+Math.sin(p.t*Math.PI)*16, base.z);
+  }
+  heatGroup.visible = S.heat;
+  for(let i=0;i<heatCells.length;i++) heatCells[i].mesh.visible = S.heat;
+
+  /* 昼夜光照与建筑窗灯 */
+  const sunI = 0.10 + df*1.05;
+  const hemiI = 0.10 + df*0.5;
+  A.sun.intensity = sunI; A.hemi.intensity = hemiI;
+  A.fill.intensity = 0.05 + df*0.32;
+  A.sun.color.setRGB(1, 0.97-df*0.06, 0.92-df*0.12);
+  A.skyMat.uniforms.top.value.setRGB(0.11+df*0.35, 0.24+df*0.55, 0.4+df*0.6);
+  A.skyMat.uniforms.bottom.value.setRGB(0.02+df*0.05, 0.03+df*0.08, 0.06+df*0.14);
+  scene.fog.color.setRGB(0.03+df*0.03, 0.05+df*0.05, 0.1+df*0.08);
+  scene.fog.near = 260+df*40; scene.fog.far = 900;
+
+  /* 建筑窗灯：夜亮昼暗 */
+  for(let i=0;i<dyn.buildings.length;i++){
+    const b = dyn.buildings[i];
+    if(b.mat.userData.noDay) continue;
+    const level = b.pv ? df*0.8 : (1-df)*(0.35 + b.win*1.5);
+    b.mat.emissiveIntensity = level;
+  }
+
+  /* 输电塔指示灯脉冲 */
+  for(let i=0;i<dyn.towers.length;i++){ dyn.towers[i].dot.emissiveIntensity = 0.5+0.5*Math.sin(performance.now()/300+i); }
+
+  window.__lastDf = df;
+}
+function ptAt(path, len, t){
+  let acc=0, target=t*len;
+  for(let i=0;i<path.length-1;i++){
+    const dx=path[i+1][0]-path[i][0], dz=path[i+1][1]-path[i][1];
+    const seg=Math.hypot(dx,dz); if(acc+seg>=target){ const f=(target-acc)/seg; return { x:path[i][0]+dx*f, z:path[i][1]+dz*f }; }
+    acc+=seg;
+  }
+  return { x:path[path.length-1][0], z:path[path.length-1][1] };
+}
+window.__updateWorld = updateWorld;
+window.__dayFactorOf = dayFactorOf;
+})();
+
+/* ================================================================
+ * 数字孪生沙盘 · 联动与数据模块
+ * 职责：多系统耦合联动、指标计算、KPI 更新、实时曲线绘制
+ * ================================================================ */
+(function(){
+const S = window.TWIN.S;
+const dyn = window.__dyn;
+function clamp(v,a,b){ return v<a?a:(v>b?b:v); }
+
+/* ---------- 曲线历史 ---------- */
+const HISTORY = 60;
+const series = { load: [], gen: [], car: [], carbon: [] };
+for(const k in series){ for(let i=0;i<HISTORY;i++) series[k].push(0); }
+
+/* ---------- KPI 更新 ---------- */
+function setKpi(idV, val, idB, pct){
+  const v = document.getElementById(idV); if(v) v.textContent = Math.round(val);
+  const b = document.getElementById(idB); if(b) b.style.width = clamp(pct,0,100)+'%';
+}
+
+/* ---------- 联动主逻辑（每秒一次） ---------- */
+function tick(){
+  const df = window.__lastDf != null ? window.__lastDf : window.__dayFactorOf(S.simHour);
+  const hour = S.simHour;
+  const day = df;
+
+  /* 交通拥堵指数：流量 + 早晚高峰 */
+  const peak = ((hour>=7&&hour<9)||(hour>=17&&hour<19)) ? 22 : 6;
+  S.trafficIndex = clamp(S.vehicleActive*1.6 + peak, 0, 100);
+
+  /* 城市负荷（含夜间照明附加） */
+  const nightLight = (1-day)*16;
+  S.cityLoad = 12 + S.trafficIndex*0.07 + nightLight + S.energyDemand*10;
+
+  /* 园区负荷随设备运行率 */
+  S.parkLoad = 8 + S.deviceRate*0.1;
+
+  const totalLoad = S.cityLoad + S.parkLoad;
+
+  /* 清洁发电：光伏(随昼夜) + 风电(波动) + 储能释放 */
+  const solar = day*16;
+  const wind = 9 + Math.sin(performance.now()/6000)*2.5;
+  const genBase = solar + wind;
+  const storage = clamp(20 - totalLoad + genBase, 0, 12);
+  S.genTotal = genBase + storage;
+
+  /* 供需平衡 → 设备运行率（供不应求时降产） */
+  const deficit = totalLoad - S.genTotal;
+  S.deviceRate = clamp(100 - Math.max(0, deficit)*1.2, 55, 100);
+
+  /* 碳排放：随车流上升、随清洁占比下降 */
+  const cleanShare = clamp(S.genTotal / Math.max(1,totalLoad), 0, 1);
+  S.carbonRate = S.trafficIndex*0.24*(1 - 0.55*cleanShare) + (1-day)*3;
+
+  /* 能量流动线 */
+  S.energyLines = S.particle ? (cleanShare>0.6 ? 40 : 26) : 0;
+
+  /* 设备灯：随运行率变色 */
+  for(let i=0;i<dyn.devices.length;i++){
+    const d = dyn.devices[i];
+    const r = S.deviceRate/100;
+    d.mat.emissiveIntensity = 0.2 + r*0.9;
+    if(r>0.8) d.mat.emissive.setRGB(0.15,0.9,0.66);
+    else if(r>0.5) d.mat.emissive.setRGB(1,0.7,0.15);
+    else d.mat.emissive.setRGB(1,0.25,0.1);
+  }
+
+  /* 写入 KPI */
+  setKpi('v_vehicle', S.vehicleActive, 'b_vehicle', S.trafficIndex);
+  setKpi('v_load', totalLoad, 'b_load', clamp(totalLoad/60*100,0,100));
+  setKpi('v_gen', S.genTotal, 'b_gen', clamp(S.genTotal/60*100,0,100));
+  setKpi('v_carbon', S.carbonRate, 'b_carbon', clamp(S.carbonRate/30*100,0,100));
+  setKpi('v_device', S.deviceRate, 'b_device', S.deviceRate);
+  setKpi('v_energy', S.energyLines, 'b_energy', clamp(S.energyLines/40*100,0,100));
+
+  /* 推入历史 */
+  series.load.push(totalLoad); series.load.shift();
+  series.gen.push(S.genTotal); series.gen.shift();
+  series.car.push(S.vehicleActive); series.car.shift();
+  series.carbon.push(S.carbonRate); series.carbon.shift();
+
+  drawChart();
+}
+
+/* ---------- 实时曲线绘制 ---------- */
+function drawChart(){
+  const c = document.getElementById('chart');
+  const cw = c.clientWidth || 288, chh = c.clientHeight || 150;
+  const dpr = window.devicePixelRatio || 1;
+  if(c.width !== Math.round(cw*dpr)){ c.width = Math.round(cw*dpr); c.height = Math.round(chh*dpr); }
+  const ctx = c.getContext('2d');
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  ctx.clearRect(0,0,cw,chh);
+  const pad = 6;
+  const colors = { load:'#3fe0ff', gen:'#2ee6a8', car:'#ffb340', carbon:'#ff5a6e' };
+  Object.keys(series).forEach(function(key, idx){
+    const data = series[key];
+    const maxV = Math.max.apply(null, data.concat([1])) * 1.1;
+    ctx.beginPath();
+    ctx.strokeStyle = colors[key]; ctx.lineWidth = 1.8;
+    for(let i=0;i<data.length;i++){
+      const x = pad + (i/(HISTORY-1))*(cw-2*pad);
+      const y = (chh - pad) - (data[i]/maxV)*(chh-2*pad);
+      if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+    }
+    ctx.stroke();
+  });
+  // 网格
+  ctx.strokeStyle='rgba(120,160,220,0.10)'; ctx.lineWidth=1;
+  for(let g=1;g<4;g++){ ctx.beginPath(); ctx.moveTo(pad,(chh*g)/4); ctx.lineTo(cw-pad,(chh*g)/4); ctx.stroke(); }
+}
+
+/* 供 app5 调用 */
+window.__tick = tick;
+window.__drawChart = drawChart;
+window.__S = S;
+})();
+
+/* ================================================================
+ * 数字孪生沙盘 · 主循环与交互模块
+ * 职责：渲染循环、窗口自适应、点击拾取、区域视角切换、
+ *       参数滑块、昼夜切换、粒子/热力开关、FPS 与坐标显示
+ * ================================================================ */
+(function(){
+const A = window.__app, scene = A.scene, camera = A.camera, controls = A.controls;
+const S = window.TWIN.S;
+
+/* ---------- 主循环 ---------- */
+const clock = A.renderer ? new THREE.Clock() : new THREE.Clock();
+function animate(){
+  requestAnimationFrame(animate);
+  const dt = Math.min(clock.getDelta(), 0.1);
+  window.__updateWorld(dt);
+  // 相机视角过渡
+  camera.position.lerp(camTarget, 0.07);
+  controls.target.lerp(lookTarget, 0.09);
+  controls.update();
+  A.renderer.render(scene, camera);
+  // FPS
+  fpsFrames++; const now = performance.now();
+  if(now - fpsT > 500){ document.getElementById('fps').textContent = Math.round(fpsFrames*1000/(now-fpsT)) + ' FPS'; fpsFrames=0; fpsT=now; }
+  // 坐标
+  const tgt = controls.target;
+  document.getElementById('coord').textContent = Math.round(tgt.x)+', '+Math.round(tgt.z);
+}
+
+/* ---------- 自适应 ---------- */
+window.addEventListener('resize', function(){
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  A.renderer.setSize(window.innerWidth, window.innerHeight);
+});
+
+/* ---------- 视角目标 ---------- */
+const camTarget = new THREE.Vector3(0, 150, 240);
+const lookTarget = new THREE.Vector3(0, 0, 0);
+const ZONES = {
+  overview: { cam:[0,150,240], look:[0,0,0], tag:'城市总览' },
+  city:     { cam:[0,120,150], look:[0,0,0], tag:'智慧城市·CBD' },
+  traffic:  { cam:[0,70,110],  look:[0,0,0], tag:'智慧交通·道路网络' },
+  energy:   { cam:[-80,130,170], look:[-80,70,0], tag:'智慧能源·风/光/储' },
+  park:     { cam:[94,110,170], look:[94,-50,0], tag:'智慧园区·智能制造' },
+};
+function goZone(key){
+  const z = ZONES[key]; if(!z) return;
+  camTarget.set(z.cam[0], z.cam[1], z.cam[2]);
+  lookTarget.set(z.look[0], z.look[1], z.look[2]);
+  document.getElementById('zoneTag').textContent = '当前区域：'+z.tag;
+  toast('已切换至『'+z.tag+'』');
+}
+document.querySelectorAll('#tabNav button').forEach(function(btn){
+  btn.addEventListener('click', function(){
+    document.querySelectorAll('#tabNav button').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    goZone(btn.dataset.tab);
+  });
+});
+document.getElementById('btnReset').addEventListener('click', function(){ goZone('overview'); document.querySelectorAll('#tabNav button').forEach(b=>b.classList.toggle('active', b.dataset.tab==='overview')); });
+
+/* ---------- 点击拾取 ---------- */
+const raycaster = new THREE.Raycaster();
+const ndc = new THREE.Vector2();
+let downX = 0, downY = 0, downT = 0;
+A.renderer.domElement.addEventListener('pointerdown', function(e){
+  downX = e.clientX; downY = e.clientY; downT = performance.now();
+});
+A.renderer.domElement.addEventListener('pointerup', function(e){
+  if(Math.hypot(e.clientX-downX, e.clientY-downY) > 6) return;
+  if(performance.now() - downT > 400) return;
+  ndc.x = (e.clientX/window.innerWidth)*2 - 1;
+  ndc.y = -(e.clientY/window.innerHeight)*2 + 1;
+  raycaster.setFromCamera(ndc, camera);
+  const hits = raycaster.intersectObjects(window.TWIN.F, true);
+  if(hits.length){
+    const d = findData(hits[0].object);
+    if(d) showDetail(d);
+    else hideDetail();
+  } else { hideDetail(); }
+});
+function findData(o){
+  while(o){ if(o.userData && o.userData.sys) return o.userData; o = o.parent; }
+  return null;
+}
+const SYSNAME = { city:'智慧城市', traffic:'智慧交通', energy:'智慧能源', park:'智慧园区' };
+
+/* ---------- 详情面板 ---------- */
+function showDetail(d){
+  const el = document.getElementById('detailBody');
+  let html = '<div class="title">'+(d.name||'实体')+'</div>';
+  const rows = [['子系统', SYSNAME[d.sys]||d.sys]];
+  if(d.h != null) rows.push(['楼高', d.h+'m']);
+  if(d.note) rows.push(['说明', d.note]);
+  rows.push(['状态', d.sys==='energy' ? '发电中' : d.sys==='park' ? '运行率 '+Math.round(S.deviceRate)+'%' : d.sys==='traffic' ? '拥堵指数 '+Math.round(S.trafficIndex) : '负载 '+Math.round(S.cityLoad)+'MW']);
+  rows.forEach(function(r){
+    html += '<div class="row"><span class="dt">'+r[0]+'</span><span class="dv">'+r[1]+'</span></div>';
+  });
+  el.innerHTML = html;
+  document.getElementById('detailPanel').classList.add('show');
+  document.getElementById('hint').classList.add('hide');
+}
+function hideDetail(){ document.getElementById('detailPanel').classList.remove('show'); }
+document.getElementById('detailClose').addEventListener('click', hideDetail);
+
+/* ---------- 滑块 ---------- */
+function bindSlider(idSlider, idLabel, cb){
+  const el = document.getElementById(idSlider);
+  el.addEventListener('input', function(){ cb(parseInt(el.value)); });
+}
+bindSlider('slVehicle','sv', function(v){ S.vehicleDensity=v/100; document.getElementById('sv').textContent = v+'%'; });
+bindSlider('slEnergy','se', function(v){ S.energyDemand=v/100; document.getElementById('se').textContent = v+'%'; });
+bindSlider('slSpeed','ss', function(v){ S.simSpeed=v/100; document.getElementById('ss').textContent = (v/100).toFixed(1)+'x'; });
+
+/* ---------- 昼夜按钮（三态） ---------- */
+let dmState = 0;                       // 0=白天 1=夜晚 2=自动
+const dmIcon = ['☀','☾','☼'];
+document.getElementById('btnDayNight').addEventListener('click', function(){
+  dmState = (dmState + 1) % 3;
+  S.dayMode = dmState===0 ? 1 : dmState===1 ? 0 : 0.5;
+  document.getElementById('btnDayNight').textContent = dmIcon[dmState];
+  toast(dmState===0?'已切换为白天模式':dmState===1?'已切换为夜晚模式':'已切换为自动昼夜');
+});
+
+/* ---------- 粒子/热力开关 ---------- */
+function bindToggle(id, setter){
+  const el = document.getElementById(id);
+  el.addEventListener('click', function(){ el.classList.toggle('on'); setter(el.classList.contains('on')); });
+}
+bindToggle('tgParticle', function(on){ S.particle=on; toast(on?'能量流动粒子：开':'能量流动粒子：关'); });
+bindToggle('tgHeat', function(on){ S.heat=on; toast(on?'能耗热力图：开':'能耗热力图：关'); });
+
+/* ---------- 提示 ---------- */
+let toastTimer;
+function toast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(function(){ t.classList.remove('show'); }, 1600);
+}
+
+/* ---------- 定时联动（每秒） ---------- */
+setInterval(window.__tick, 1000);
+
+/* ---------- 启动 ---------- */
+let fpsFrames = 0, fpsT = performance.now();
+setTimeout(function(){ document.getElementById('hint').classList.add('hide'); }, 9000);
+animate();
+
+/* 立即画一次曲线 */
+window.__drawChart();
+})();
+
+
+</script>
+</body>
+</html>
